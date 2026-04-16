@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Brain Dump & History</title>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
@@ -37,7 +37,13 @@
             font-family: 'Nunito', 'Segoe UI', sans-serif;
             background: var(--bg);
             display: flex;
-            height: 100vh;
+            /* GANTI 100vh menjadi 100dvh */
+            height: 100dvh; 
+            /* Alternatif opsional: 100svh (Small Viewport) kalau dvh terasa terlalu loncat-loncat saat scroll */
+            
+            /* Tambahan penting: cegah pull-to-refresh di browser HP */
+            overscroll-behavior-y: none; 
+            
             overflow: hidden;
             color: var(--text-main);
         }
@@ -164,9 +170,14 @@
 
         /* ── Input area ── */
         .input-area {
-            background: var(--surface); padding: 12px 14px;
-            display: flex; flex-direction: row; align-items: stretch;
-            gap: 9px; border-top: 1.5px solid #f0ddf5;
+            background: var(--surface); 
+            /* Modifikasi padding: tambahkan safe-area di bagian bawah */
+            padding: 12px 14px calc(12px + env(safe-area-inset-bottom));
+            display: flex; 
+            flex-direction: row; 
+            align-items: stretch;
+            gap: 9px; 
+            border-top: 1.5px solid #f0ddf5;
         }
         textarea {
             flex: 1; width: auto; padding: 10px 14px; border: 1.5px solid var(--lavender);
@@ -210,6 +221,53 @@
             .action-row { justify-content: flex-end; flex-wrap: nowrap; }
             .btn-send, .btn-groq { flex: 0 1 auto; }
         }
+
+        /* ── Mobile Optimization (The Cramp Mode) ── */
+        @media (max-width: 767px) {
+            /* Perkecil header agar tidak makan tempat */
+            .header {
+                padding: 6px 10px;
+                padding-top: calc(6px + env(safe-area-inset-top)); /* Jaga-jaga kalau ada notch/poni HP */
+            }
+            
+            input[type="password"], input[type="text"], .btn-copy, .btn-toggle {
+                padding: 6px 10px; /* Kurangi padding dari 8px ke 6px */
+                font-size: 0.8em;
+            }
+
+            /* Perkecil jarak di input area bawah */
+            .input-area {
+                padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+                gap: 6px;
+            }
+
+            textarea {
+                padding: 8px 12px;
+                font-size: 0.85em; /* Huruf sedikit lebih kecil agar muat banyak */
+                border-radius: 10px;
+            }
+
+            .action-row {
+                gap: 6px;
+                flex: 0 0 90px; /* Perkecil lebar area tombol */
+            }
+
+            .btn-send, .btn-groq {
+                padding: 6px 12px;
+                font-size: 0.8em;
+            }
+            
+            /* Rapatkan jarak antar bubble chat */
+            .chat-window {
+                padding: 10px;
+                gap: 8px;
+            }
+            .bubble {
+                padding: 8px 12px;
+            }
+        }
+
+        
     </style>
 </head>
 <body>
@@ -387,30 +445,39 @@ async function requestGroqAnswer() {
     const systemPrompt = document.getElementById('systemPrompt').value;
     const messagesForAPI = [{ role: "system", content: systemPrompt }, ...session.messages.map(m => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.content }))];
     
-    try {
-        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ model: "llama3-8b-8192", messages: messagesForAPI }) // Model dummy disesuaikan biar API Groq jalan
-        });
-        
-        if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
-        
-        const data = await response.json();
-        const botReply = data.choices[0].message.content;
-        
-        document.getElementById('typing-loader')?.remove();
-        session.messages.push({ role: 'assistant', content: botReply, timestamp: new Date().toISOString() });
-        
-        saveToDisk(); renderChat();
-        
-        // Scroll lagi pas jawaban bot kelar dimuat
-        scrollToBottom(true);
-        
-    } catch (e) {
-        document.getElementById('typing-loader')?.remove();
-        alert("Error: " + e.message);
+   try {
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 
+            'Authorization': `Bearer ${apiKey}`, 
+            'Content-Type': 'application/json' 
+        },
+        body: JSON.stringify({ 
+            model: "meta-llama/llama-4-scout-17b-16e-instruct", // Pastikan ID ini valid di console Groq
+            messages: messagesForAPI 
+        })
+    });
+    
+    // TANGKAP DETAIL ERROR 400 DI SINI
+    if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Detail Error API:", errorData); // Cek console (F12) untuk melihat alasannya
+        throw new Error(`Error API (${response.status}): ${errorData.error?.message || 'Bad Request'}`);
     }
+    
+    const data = await response.json();
+    const botReply = data.choices[0].message.content;
+    
+    document.getElementById('typing-loader')?.remove();
+    session.messages.push({ role: 'assistant', content: botReply, timestamp: new Date().toISOString() });
+    
+    saveToDisk(); renderChat();
+    scrollToBottom(true);
+    
+} catch (e) {
+    document.getElementById('typing-loader')?.remove();
+    alert(e.message);
+}
 }
 
 function copyCurrentSession() {
