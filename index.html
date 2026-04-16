@@ -482,10 +482,48 @@ async function requestGroqAnswer() {
 
 function copyCurrentSession() {
     const session = allSessions.find(s => s.id === currentSessionId);
-    if (!session) return;
-    navigator.clipboard.writeText(JSON.stringify(session, null, 2))
-        .then(() => alert("Data JSON tercopy!"))
-        .catch(err => alert("Gagal copy: ", err));
+    if (!session) return alert("Belum ada sesi untuk dicopy!");
+    
+    const textToCopy = JSON.stringify(session, null, 2);
+
+    // Rencana A: Pakai API Modern (Kalau didukung dan jalan di HTTPS/Localhost)
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(textToCopy)
+            .then(() => alert("✨ Data JSON berhasil dicopy!"))
+            .catch(err => alert("Gagal copy (Modern API): " + err));
+    } 
+    // Rencana B: Fallback Klasik (Solusi paling ampuh untuk HP / HTTP biasa)
+    else {
+        // Buat elemen textarea siluman
+        const textArea = document.createElement("textarea");
+        textArea.value = textToCopy;
+        
+        // Sembunyikan textarea ini agar tidak merusak layout HP
+        textArea.style.position = "fixed";
+        textArea.style.top = "-9999px";
+        textArea.style.left = "-9999px";
+        document.body.appendChild(textArea);
+        
+        // Fokus dan blok semua teksnya
+        textArea.focus();
+        textArea.select();
+        textArea.setSelectionRange(0, 99999); // Khusus agar support di iOS/Safari
+        
+        try {
+            // Paksa eksekusi perintah copy bawaan browser
+            const successful = document.execCommand('copy');
+            if (successful) {
+                alert("📋 Data JSON berhasil dicopy! (Mode Klasik)");
+            } else {
+                alert("Waduh, browser HP kamu tetap menolak perintah copy.");
+            }
+        } catch (err) {
+            alert("Gagal copy (Mode Klasik): " + err);
+        }
+        
+        // Hapus jejak textarea siluman
+        document.body.removeChild(textArea);
+    }
 }
 
 function toggleSidebar() {
