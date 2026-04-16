@@ -187,21 +187,38 @@
         .read-mark { color: var(--mint-d); font-weight: 700; margin-right: 4px; }
 
         /* ── Input area ── */
+        /* 1. Ubah container jadi menyamping */
         .input-area {
-            background: var(--surface); padding: 12px 14px;
-            display: flex; flex-direction: column; gap: 9px;
+            background: var(--surface); 
+            padding: 12px 14px;
+            display: flex; 
+            flex-direction: row; /* Berjejer ke samping */
+            align-items: stretch; /* Biar tinggi textarea & tombol sama */
+            gap: 9px;
             border-top: 1.5px solid #f0ddf5;
         }
         textarea {
-            width: 100%; padding: 10px 14px; border: 1.5px solid var(--lavender);
+            flex: 1;
+            width: auto; padding: 10px 14px; border: 1.5px solid var(--lavender);
             border-radius: 14px; resize: none; background: var(--lav-t);
             color: var(--text-main); font-family: 'Nunito', sans-serif;
             font-size: 0.9em; line-height: 1.5; outline: none; transition: 0.2s;
         }
         textarea:focus { border-color: var(--lav-d); background: white; }
         
-        .action-row { display: flex; gap: 8px; flex-wrap: wrap; }
+        .action-row { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 8px; 
+            flex: 0 0 110px; /* Lebar area tombol, sesuaikan kalau teksnya kepotong */
+        }
         .btn-send, .btn-groq {
+            flex: 1; 
+            padding: 0 10px; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1.2;
             border: none; border-radius: var(--radius-sm); padding: 9px 18px;
             font-weight: 700; font-size: 0.88em; cursor: pointer;
             font-family: 'Nunito', sans-serif; transition: 0.2s;
